@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const revenueData: { m: string; v: number }[] = [];
 
@@ -16,17 +16,12 @@ const attendanceHeatmap: { day: string; hours: number[] }[] = [];
 export default function AnalyticsPage() {
   const [range, setRange] = useState('9months');
   const [toast, setToast] = useState('');
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   const maxRev = revenueData.length > 0 ? Math.max(...revenueData.map(d => d.v)) : 1;
   const maxMem = memberGrowth.length > 0 ? Math.max(...memberGrowth.map(d => d.v)) : 1;
   const totalPlan = planDist.reduce((s, p) => s + p.val, 0) || 1;
-
-  if (!mounted) return null;
 
   return (
     <div className="animate-fade-in">

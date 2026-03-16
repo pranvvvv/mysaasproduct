@@ -7,9 +7,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Protect all dashboard routes
+    // Protect dashboard routes only.
     '/dashboard/:path*',
-    // Skip static files and API routes that don't need auth
-    '/((?!_next/static|_next/image|favicon.ico|icon.svg|logo.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Keep auth callback path in middleware flow for session refresh.
+    '/auth/callback',
   ],
 };

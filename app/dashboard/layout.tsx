@@ -1,7 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import ThemeToggle from '../components/ThemeToggle';
 import { createClient } from '@/lib/supabase/client';
 
@@ -20,11 +20,19 @@ const navItems = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
 
   const notifications: { id: number; text: string; time: string; read: boolean }[] = [];
+
+  useEffect(() => {
+    // Preload dashboard route chunks so sidebar navigation feels instant.
+    for (const item of navItems) {
+      router.prefetch(item.href);
+    }
+  }, [router]);
 
   return (
     <div className="flex h-screen bg-dark overflow-hidden">
@@ -53,6 +61,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={true}
                 title={collapsed ? item.label : undefined}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl mb-0.5 text-sm transition-all ${isActive ? 'bg-brand/10 text-brand font-medium' : 'text-muted hover:text-white hover:bg-white/[0.03]'} ${collapsed ? 'justify-center' : ''}`}
               >
