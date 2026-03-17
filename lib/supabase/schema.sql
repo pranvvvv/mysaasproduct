@@ -1,5 +1,5 @@
 -- =============================================================
--- mygymsoftware — Complete Database Schema
+-- primegymsoftware — Complete Database Schema
 -- Run this in Supabase SQL Editor (Dashboard > SQL Editor > New Query)
 -- =============================================================
 -- SECURITY ARCHITECTURE:

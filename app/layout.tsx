@@ -1,11 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import ThemeProvider from "./components/ThemeProvider";
 
 export const metadata: Metadata = {
-  title: "mygymsoftware — Run your gym smarter. Not harder.",
+  title: "primegymsoftware — Run your gym smarter. Not harder.",
   description: "The all-in-one operating system for modern gyms — members, billing, attendance, leads, classes. One dashboard.",
   icons: { icon: '/icon.svg' },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  minimumScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

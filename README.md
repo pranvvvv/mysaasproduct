@@ -1,4 +1,4 @@
-# mygymsoftware
+# primegymsoftware
 
 [![CI-CD](https://github.com/pranvvvv/mysaasproduct/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/pranvvvv/mysaasproduct/actions/workflows/ci-cd.yml)
 

@@ -104,7 +104,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/">
-            <img src="/logo.png" alt="mygymsoftware" className="h-10 w-auto mx-auto mb-4" />
+            <img src="/logo.png" alt="primegymsoftware" className="h-10 w-auto mx-auto mb-4" />
           </Link>
           <h1 className="text-2xl font-bold">{mode === 'login' ? 'Welcome back' : 'Create your account'}</h1>
           <p className="text-sm text-muted mt-1">

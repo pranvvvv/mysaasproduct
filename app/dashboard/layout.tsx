@@ -50,7 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <rect x="18.5" y="1" width="3.5" height="21" rx="1" fill="#2563EB"/>
               </svg>
             ) : (
-              <img src="/logo.png" alt="mygymsoftware" className="h-9 w-auto" />
+              <img src="/logo.png" alt="primegymsoftware" className="h-9 w-auto" />
             )}
           </Link>
         </div>

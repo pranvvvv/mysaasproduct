@@ -66,7 +66,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center">
-              <img src="/logo.png" alt="mygymsoftware" className="h-8 w-auto" />
+              <img src="/logo.png" alt="primegymsoftware" className="h-8 w-auto" />
             </Link>
             <div className="hidden md:flex items-center gap-6 text-sm text-muted">
               <a href="#features" className="hover:text-white transition-colors">Features</a>
@@ -328,7 +328,7 @@ export default function LandingPage() {
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-12">
             <div className="text-brand text-sm font-medium mb-3">Book a Demo</div>
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">See mygymsoftware in action</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">See primegymsoftware in action</h2>
             <p className="text-muted">Fill in your details and we&apos;ll schedule a personalized walkthrough within 24 hours.</p>
           </div>
           {demoSubmitted ? (
@@ -392,7 +392,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="grid sm:grid-cols-4 gap-8 mb-12">
             <div className="sm:col-span-1">
-              <img src="/logo.png" alt="mygymsoftware" className="h-8 w-auto mb-3" />
+              <img src="/logo.png" alt="primegymsoftware" className="h-8 w-auto mb-3" />
               <p className="text-sm text-muted leading-relaxed">Run your gym smarter. Not harder. The all-in-one operating system for modern gyms in India.</p>
             </div>
             <div>
@@ -423,7 +423,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="border-t border-white/[0.06] pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted">
-            <span>© 2026 mygymsoftware. All rights reserved.</span>
+            <span>© 2026 primegymsoftware. All rights reserved.</span>
             <span>Made with ❤️ in India</span>
           </div>
         </div>
