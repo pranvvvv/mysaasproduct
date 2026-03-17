@@ -76,9 +76,9 @@ CREATE TABLE IF NOT EXISTS public.members (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_members_gym ON public.members(gym_id);
-CREATE INDEX idx_members_phone ON public.members(phone);
-CREATE INDEX idx_members_status ON public.members(gym_id, status);
+CREATE INDEX IF NOT EXISTS idx_members_gym ON public.members(gym_id);
+CREATE INDEX IF NOT EXISTS idx_members_phone ON public.members(phone);
+CREATE INDEX IF NOT EXISTS idx_members_status ON public.members(gym_id, status);
 
 ALTER TABLE public.members ENABLE ROW LEVEL SECURITY;
 
@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS public.plans (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_plans_gym ON public.plans(gym_id);
+CREATE INDEX IF NOT EXISTS idx_plans_gym ON public.plans(gym_id);
 
 ALTER TABLE public.plans ENABLE ROW LEVEL SECURITY;
 
@@ -120,10 +120,10 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_subscriptions_gym ON public.subscriptions(gym_id);
-CREATE INDEX idx_subscriptions_member ON public.subscriptions(member_id);
-CREATE INDEX idx_subscriptions_status ON public.subscriptions(gym_id, status);
-CREATE INDEX idx_subscriptions_end_date ON public.subscriptions(end_date);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_gym ON public.subscriptions(gym_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_member ON public.subscriptions(member_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON public.subscriptions(gym_id, status);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_end_date ON public.subscriptions(end_date);
 
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
 
@@ -140,9 +140,9 @@ CREATE TABLE IF NOT EXISTS public.attendance (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_attendance_gym ON public.attendance(gym_id);
-CREATE INDEX idx_attendance_member ON public.attendance(member_id);
-CREATE INDEX idx_attendance_date ON public.attendance(gym_id, check_in);
+CREATE INDEX IF NOT EXISTS idx_attendance_gym ON public.attendance(gym_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_member ON public.attendance(member_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_date ON public.attendance(gym_id, check_in);
 
 ALTER TABLE public.attendance ENABLE ROW LEVEL SECURITY;
 
@@ -164,7 +164,7 @@ CREATE TABLE IF NOT EXISTS public.classes (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_classes_gym ON public.classes(gym_id);
+CREATE INDEX IF NOT EXISTS idx_classes_gym ON public.classes(gym_id);
 
 ALTER TABLE public.classes ENABLE ROW LEVEL SECURITY;
 
@@ -182,7 +182,7 @@ CREATE TABLE IF NOT EXISTS public.class_bookings (
   UNIQUE(class_id, member_id, booking_date)
 );
 
-CREATE INDEX idx_class_bookings_gym ON public.class_bookings(gym_id);
+CREATE INDEX IF NOT EXISTS idx_class_bookings_gym ON public.class_bookings(gym_id);
 
 ALTER TABLE public.class_bookings ENABLE ROW LEVEL SECURITY;
 
@@ -207,9 +207,9 @@ CREATE TABLE IF NOT EXISTS public.invoices (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_invoices_gym ON public.invoices(gym_id);
-CREATE INDEX idx_invoices_member ON public.invoices(member_id);
-CREATE INDEX idx_invoices_status ON public.invoices(gym_id, status);
+CREATE INDEX IF NOT EXISTS idx_invoices_gym ON public.invoices(gym_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_member ON public.invoices(member_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON public.invoices(gym_id, status);
 
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
 
@@ -232,9 +232,9 @@ CREATE TABLE IF NOT EXISTS public.leads (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_leads_gym ON public.leads(gym_id);
-CREATE INDEX idx_leads_stage ON public.leads(gym_id, stage);
-CREATE INDEX idx_leads_follow_up ON public.leads(follow_up_date) WHERE follow_up_date IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_leads_gym ON public.leads(gym_id);
+CREATE INDEX IF NOT EXISTS idx_leads_stage ON public.leads(gym_id, stage);
+CREATE INDEX IF NOT EXISTS idx_leads_follow_up ON public.leads(follow_up_date) WHERE follow_up_date IS NOT NULL;
 
 ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
 
@@ -256,8 +256,8 @@ CREATE TABLE IF NOT EXISTS public.messages (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_messages_gym ON public.messages(gym_id);
-CREATE INDEX idx_messages_member ON public.messages(recipient_member_id);
+CREATE INDEX IF NOT EXISTS idx_messages_gym ON public.messages(gym_id);
+CREATE INDEX IF NOT EXISTS idx_messages_member ON public.messages(recipient_member_id);
 
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 
@@ -319,24 +319,29 @@ AS $$
 $$;
 
 -- ---- GYMS ----
+DROP POLICY IF EXISTS "Users can view own gym" ON public.gyms;
 CREATE POLICY "Users can view own gym"
   ON public.gyms FOR SELECT
   USING (id = public.get_user_gym_id());
 
+DROP POLICY IF EXISTS "Owners can update own gym" ON public.gyms;
 CREATE POLICY "Owners can update own gym"
   ON public.gyms FOR UPDATE
   USING (id = public.get_user_gym_id())
   WITH CHECK (id = public.get_user_gym_id());
 
 -- ---- PROFILES ----
+DROP POLICY IF EXISTS "Users can view gym staff" ON public.profiles;
 CREATE POLICY "Users can view gym staff"
   ON public.profiles FOR SELECT
   USING (gym_id = public.get_user_gym_id());
 
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile"
   ON public.profiles FOR UPDATE
   USING (id = auth.uid());
 
+DROP POLICY IF EXISTS "Owners/managers can manage staff" ON public.profiles;
 CREATE POLICY "Owners/managers can manage staff"
   ON public.profiles FOR ALL
   USING (
@@ -348,109 +353,133 @@ CREATE POLICY "Owners/managers can manage staff"
   );
 
 -- ---- MEMBERS ----
+DROP POLICY IF EXISTS "Gym staff can view members" ON public.members;
 CREATE POLICY "Gym staff can view members"
   ON public.members FOR SELECT
   USING (gym_id = public.get_user_gym_id());
 
+DROP POLICY IF EXISTS "Gym staff can insert members" ON public.members;
 CREATE POLICY "Gym staff can insert members"
   ON public.members FOR INSERT
   WITH CHECK (gym_id = public.get_user_gym_id());
 
+DROP POLICY IF EXISTS "Gym staff can update members" ON public.members;
 CREATE POLICY "Gym staff can update members"
   ON public.members FOR UPDATE
   USING (gym_id = public.get_user_gym_id())
   WITH CHECK (gym_id = public.get_user_gym_id());
 
+DROP POLICY IF EXISTS "Gym staff can delete members" ON public.members;
 CREATE POLICY "Gym staff can delete members"
   ON public.members FOR DELETE
   USING (gym_id = public.get_user_gym_id());
 
 -- ---- PLANS ----
+DROP POLICY IF EXISTS "Gym staff can view plans" ON public.plans;
 CREATE POLICY "Gym staff can view plans"
   ON public.plans FOR SELECT
   USING (gym_id = public.get_user_gym_id());
 
+DROP POLICY IF EXISTS "Gym staff can manage plans" ON public.plans;
 CREATE POLICY "Gym staff can manage plans"
   ON public.plans FOR ALL
   USING (gym_id = public.get_user_gym_id());
 
 -- ---- SUBSCRIPTIONS ----
+DROP POLICY IF EXISTS "Gym staff can view subscriptions" ON public.subscriptions;
 CREATE POLICY "Gym staff can view subscriptions"
   ON public.subscriptions FOR SELECT
   USING (gym_id = public.get_user_gym_id());
 
+DROP POLICY IF EXISTS "Gym staff can manage subscriptions" ON public.subscriptions;
 CREATE POLICY "Gym staff can manage subscriptions"
   ON public.subscriptions FOR ALL
   USING (gym_id = public.get_user_gym_id());
 
 -- ---- ATTENDANCE ----
+DROP POLICY IF EXISTS "Gym staff can view attendance" ON public.attendance;
 CREATE POLICY "Gym staff can view attendance"
   ON public.attendance FOR SELECT
   USING (gym_id = public.get_user_gym_id());
 
+DROP POLICY IF EXISTS "Gym staff can manage attendance" ON public.attendance;
 CREATE POLICY "Gym staff can manage attendance"
   ON public.attendance FOR ALL
   USING (gym_id = public.get_user_gym_id());
 
 -- ---- CLASSES ----
+DROP POLICY IF EXISTS "Gym staff can view classes" ON public.classes;
 CREATE POLICY "Gym staff can view classes"
   ON public.classes FOR SELECT
   USING (gym_id = public.get_user_gym_id());
 
+DROP POLICY IF EXISTS "Gym staff can manage classes" ON public.classes;
 CREATE POLICY "Gym staff can manage classes"
   ON public.classes FOR ALL
   USING (gym_id = public.get_user_gym_id());
 
 -- ---- CLASS BOOKINGS ----
+DROP POLICY IF EXISTS "Gym staff can view bookings" ON public.class_bookings;
 CREATE POLICY "Gym staff can view bookings"
   ON public.class_bookings FOR SELECT
   USING (gym_id = public.get_user_gym_id());
 
+DROP POLICY IF EXISTS "Gym staff can manage bookings" ON public.class_bookings;
 CREATE POLICY "Gym staff can manage bookings"
   ON public.class_bookings FOR ALL
   USING (gym_id = public.get_user_gym_id());
 
 -- ---- INVOICES ----
+DROP POLICY IF EXISTS "Gym staff can view invoices" ON public.invoices;
 CREATE POLICY "Gym staff can view invoices"
   ON public.invoices FOR SELECT
   USING (gym_id = public.get_user_gym_id());
 
+DROP POLICY IF EXISTS "Gym staff can manage invoices" ON public.invoices;
 CREATE POLICY "Gym staff can manage invoices"
   ON public.invoices FOR ALL
   USING (gym_id = public.get_user_gym_id());
 
 -- ---- LEADS ----
+DROP POLICY IF EXISTS "Gym staff can view leads" ON public.leads;
 CREATE POLICY "Gym staff can view leads"
   ON public.leads FOR SELECT
   USING (gym_id = public.get_user_gym_id());
 
+DROP POLICY IF EXISTS "Gym staff can manage leads" ON public.leads;
 CREATE POLICY "Gym staff can manage leads"
   ON public.leads FOR ALL
   USING (gym_id = public.get_user_gym_id());
 
 -- ---- MESSAGES ----
+DROP POLICY IF EXISTS "Gym staff can view messages" ON public.messages;
 CREATE POLICY "Gym staff can view messages"
   ON public.messages FOR SELECT
   USING (gym_id = public.get_user_gym_id());
 
+DROP POLICY IF EXISTS "Gym staff can manage messages" ON public.messages;
 CREATE POLICY "Gym staff can manage messages"
   ON public.messages FOR ALL
   USING (gym_id = public.get_user_gym_id());
 
 -- ---- NOTIFICATION SETTINGS ----
+DROP POLICY IF EXISTS "Gym staff can view notification settings" ON public.notification_settings;
 CREATE POLICY "Gym staff can view notification settings"
   ON public.notification_settings FOR SELECT
   USING (gym_id = public.get_user_gym_id());
 
+DROP POLICY IF EXISTS "Gym staff can manage notification settings" ON public.notification_settings;
 CREATE POLICY "Gym staff can manage notification settings"
   ON public.notification_settings FOR ALL
   USING (gym_id = public.get_user_gym_id());
 
 -- ---- INTEGRATIONS ----
+DROP POLICY IF EXISTS "Gym staff can view integrations" ON public.integrations;
 CREATE POLICY "Gym staff can view integrations"
   ON public.integrations FOR SELECT
   USING (gym_id = public.get_user_gym_id());
 
+DROP POLICY IF EXISTS "Owners can manage integrations" ON public.integrations;
 CREATE POLICY "Owners can manage integrations"
   ON public.integrations FOR ALL
   USING (
@@ -477,12 +506,19 @@ END;
 $$;
 
 -- Apply to all tables with updated_at
+DROP TRIGGER IF EXISTS set_updated_at ON public.gyms;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.gyms FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON public.profiles;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON public.members;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.members FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON public.plans;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.plans FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON public.leads;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.leads FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON public.notification_settings;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.notification_settings FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+DROP TRIGGER IF EXISTS set_updated_at ON public.integrations;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.integrations FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 -- =============================================================
@@ -507,6 +543,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
