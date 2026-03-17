@@ -6,10 +6,23 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request: { headers: request.headers } });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const isDashboardPath = request.nextUrl.pathname.startsWith('/dashboard');
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    if (isDashboardPath) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
+      loginUrl.searchParams.set('error', 'Authentication is temporarily unavailable.');
+      return NextResponse.redirect(loginUrl);
+    }
+
+    return response;
+  }
+
+  try {
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         get(name: string) {
           return request.cookies.get(name)?.value;
@@ -25,18 +38,30 @@ export async function updateSession(request: NextRequest) {
           response.cookies.set({ name, value: '', ...options });
         },
       },
+    });
+
+    // Refresh the session — this is what keeps auth alive.
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    // Protect dashboard routes — redirect to login if not authenticated.
+    if (!user && isDashboardPath) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
+      return NextResponse.redirect(loginUrl);
     }
-  );
 
-  // Refresh the session — this is what keeps auth alive
-  const { data: { user } } = await supabase.auth.getUser();
+    return response;
+  } catch {
+    // Never crash middleware in production; fail closed for protected routes.
+    if (isDashboardPath) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
+      loginUrl.searchParams.set('error', 'Session refresh failed. Please sign in again.');
+      return NextResponse.redirect(loginUrl);
+    }
 
-  // Protect dashboard routes — redirect to login if not authenticated
-  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
-    return NextResponse.redirect(loginUrl);
+    return response;
   }
-
-  return response;
 }
