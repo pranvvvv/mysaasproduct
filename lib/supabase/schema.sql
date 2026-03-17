@@ -510,3 +510,72 @@ $$;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- =============================================================
+-- COMPLETE GYM ONBOARDING AFTER AUTH SIGNUP / OAUTH
+-- =============================================================
+CREATE OR REPLACE FUNCTION public.complete_gym_onboarding(
+  gym_name_input TEXT,
+  gym_plan_input TEXT DEFAULT 'starter',
+  full_name_input TEXT DEFAULT NULL,
+  branch_count_input INTEGER DEFAULT 1
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  created_gym_id UUID;
+  normalized_plan TEXT;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+
+  SELECT gym_id INTO created_gym_id
+  FROM public.profiles
+  WHERE id = auth.uid();
+
+  IF created_gym_id IS NOT NULL THEN
+    RETURN created_gym_id;
+  END IF;
+
+  normalized_plan := CASE
+    WHEN gym_plan_input IN ('starter', 'pro', 'enterprise') THEN gym_plan_input
+    WHEN COALESCE(branch_count_input, 1) > 1 THEN 'enterprise'
+    ELSE 'starter'
+  END;
+
+  INSERT INTO public.gyms (name, plan, tagline)
+  VALUES (
+    gym_name_input,
+    normalized_plan,
+    CASE
+      WHEN COALESCE(branch_count_input, 1) > 1 THEN CONCAT(branch_count_input, ' gyms linked under one owner account')
+      ELSE NULL
+    END
+  )
+  RETURNING id INTO created_gym_id;
+
+  UPDATE public.profiles
+  SET
+    gym_id = created_gym_id,
+    full_name = COALESCE(NULLIF(full_name_input, ''), full_name),
+    role = 'owner',
+    updated_at = NOW()
+  WHERE id = auth.uid();
+
+  INSERT INTO public.notification_settings (gym_id)
+  VALUES (created_gym_id)
+  ON CONFLICT (gym_id) DO NOTHING;
+
+  INSERT INTO public.integrations (gym_id)
+  VALUES (created_gym_id)
+  ON CONFLICT (gym_id) DO NOTHING;
+
+  RETURN created_gym_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.complete_gym_onboarding(TEXT, TEXT, TEXT, INTEGER) TO authenticated;
