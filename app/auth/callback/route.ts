@@ -54,22 +54,6 @@ export async function GET(request: Request) {
   const code = searchParams.get('code');
   const next = normalizeNextPath(searchParams.get('next'));
 
-  // Try to get metadata from cookie if available
-  let oauthMetadata: { portal?: string; intent?: string; fullName?: string; gymName?: string; branchCount?: string } = {};
-  const cookieHeader = request.headers.get('cookie');
-  if (cookieHeader) {
-    const cookies = Object.fromEntries(
-      cookieHeader.split('; ').map(c => c.split('=').map(decodeURIComponent) as [string, string])
-    );
-    if (cookies.oauth_metadata) {
-      try {
-        oauthMetadata = JSON.parse(cookies.oauth_metadata);
-      } catch (e) {
-        // Invalid JSON, ignore
-      }
-    }
-  }
-
   if (code) {
     const supabase = await createServerSupabaseClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
@@ -80,16 +64,16 @@ export async function GET(request: Request) {
 
       if (user) {
         const userMetadata = (user.user_metadata ?? {}) as Record<string, unknown>;
-       const portal = normalizePortal(oauthMetadata.portal ?? searchParams.get('portal') ?? String(userMetadata.account_type ?? 'staff'));
-       const intent = normalizeIntent(oauthMetadata.intent ?? searchParams.get('intent') ?? String(userMetadata.auth_intent ?? 'login'));
+        const portal = normalizePortal(searchParams.get('portal') ?? String(userMetadata.account_type ?? 'staff'));
+        const intent = normalizeIntent(searchParams.get('intent') ?? String(userMetadata.auth_intent ?? 'login'));
 
-       const fullName = getUserDisplayName(oauthMetadata.fullName ?? searchParams.get('full_name'), userMetadata, user.email);
-       const gymNameFromParams = oauthMetadata.gymName?.trim() ?? searchParams.get('gym_name')?.trim() ?? '';
+        const fullName = getUserDisplayName(searchParams.get('full_name'), userMetadata, user.email);
+        const gymNameFromParams = searchParams.get('gym_name')?.trim() ?? '';
         const gymNameFromMetadata = typeof userMetadata.gym_name === 'string' ? userMetadata.gym_name.trim() : '';
         const gymName = gymNameFromParams || gymNameFromMetadata;
 
-       const branchCount = Number.parseInt(
-         oauthMetadata.branchCount ?? searchParams.get('branch_count') ?? String(userMetadata.branch_count ?? '1'),
+        const branchCount = Number.parseInt(
+          searchParams.get('branch_count') ?? String(userMetadata.branch_count ?? '1'),
           10
         );
         const normalizedBranchCount = Number.isFinite(branchCount) && branchCount > 0 ? branchCount : 1;

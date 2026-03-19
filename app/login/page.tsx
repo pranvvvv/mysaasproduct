@@ -97,38 +97,16 @@ export default function LoginPage() {
 
     setLoading(true);
 
-     // Store metadata in sessionStorage before OAuth redirect
-     const metadata = {
-       redirectPath,
-       portal,
-       mode,
-       fullName,
-       gymName,
-       branchCount,
-     };
-     sessionStorage.setItem('oauth_metadata', JSON.stringify(metadata));
-
-   // Also set as cookie for server-side access
-   document.cookie = `oauth_metadata=${encodeURIComponent(JSON.stringify({
-     portal,
-     intent: mode,
-     fullName,
-     gymName,
-     branchCount,
-   }))}; path=/; max-age=600`; // 10 minute expiry
-
-     const callbackUrl = new URL('/auth/callback', window.location.origin).toString();
-
-     const { error: oauthError } = await supabase.auth.signInWithOAuth({
-       provider: 'google',
-       options: {
-         redirectTo: callbackUrl,
-         queryParams: {
-           access_type: 'offline',
-           prompt: 'select_account',
-         },
-       },
-     });
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: buildCallbackUrl(),
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'select_account',
+        },
+      },
+    });
 
     if (oauthError) {
       setError(oauthError.message);
