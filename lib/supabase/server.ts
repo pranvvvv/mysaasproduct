@@ -1,14 +1,20 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { getServerSupabaseConfig } from './config';
 
 // Server-side Supabase client for Server Components / Route Handlers / Server Actions.
 // Uses anon key + cookie-based auth. RLS enforced per user session.
 export async function createServerSupabaseClient() {
   const cookieStore = await cookies();
+  const { url: supabaseUrl, anonKey: supabaseAnonKey } = getServerSupabaseConfig();
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing Supabase server configuration. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+  }
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name: string) {

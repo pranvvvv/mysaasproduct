@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr';
+import { getPublicSupabaseConfig } from './config';
 
 const FALLBACK_SUPABASE_URL = 'https://placeholder.supabase.co';
 const FALLBACK_SUPABASE_ANON_KEY = 'placeholder-anon-key';
@@ -7,8 +8,7 @@ const FALLBACK_SUPABASE_ANON_KEY = 'placeholder-anon-key';
 // All data access is gated by Row Level Security policies.
 // NEVER import the service role key here.
 export function createClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const { url: supabaseUrl, anonKey: supabaseAnonKey } = getPublicSupabaseConfig();
 
   if (!supabaseUrl || !supabaseAnonKey) {
     // During build-time prerender, client components are rendered on the server.

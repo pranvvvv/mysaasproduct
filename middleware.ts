@@ -9,6 +9,8 @@ export const config = {
   matcher: [
     // Protect dashboard routes only.
     '/dashboard/:path*',
+    // Keep onboarding route protected for authenticated setup flow.
+    '/onboarding',
     // Keep auth callback path in middleware flow for session refresh.
     '/auth/callback',
   ],

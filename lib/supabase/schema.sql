@@ -537,7 +537,7 @@ BEGIN
     (NEW.raw_user_meta_data ->> 'gym_id')::UUID,
     COALESCE(NEW.raw_user_meta_data ->> 'full_name', NEW.email),
     NEW.email,
-    COALESCE(NEW.raw_user_meta_data ->> 'role', 'owner')
+    COALESCE(NEW.raw_user_meta_data ->> 'role', 'staff')
   );
   RETURN NEW;
 END;

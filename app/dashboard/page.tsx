@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { getGymContext } from '@/lib/supabase/gym';
 import type { Member } from '@/lib/supabase/types';
@@ -9,6 +10,9 @@ import type { Member } from '@/lib/supabase/types';
 const emptyForm = { name: '', phone: '', email: '' };
 
 export default function DashboardHome() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
   const [gymId, setGymId] = useState('');
@@ -19,6 +23,7 @@ export default function DashboardHome() {
   const [addForm, setAddForm] = useState(emptyForm);
   const [toast, setToast] = useState('');
   const [error, setError] = useState('');
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -51,6 +56,19 @@ export default function DashboardHome() {
   useEffect(() => {
     void loadDashboardData();
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('welcome') === '1') {
+      setShowWelcomeBanner(true);
+
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.delete('welcome');
+      const nextQuery = nextParams.toString();
+      const nextUrl = nextQuery ? `${pathname}?${nextQuery}` : pathname;
+
+      router.replace(nextUrl, { scroll: false });
+    }
+  }, [pathname, router, searchParams]);
 
   const kpis = useMemo(() => {
     const totalMembers = members.length;
@@ -106,6 +124,37 @@ export default function DashboardHome() {
       {toast && (
         <div className="fixed top-20 right-6 z-50 bg-green-500/10 border border-green-500/30 text-green-400 px-5 py-3 rounded-xl text-sm animate-slide-down shadow-lg">
           {toast}
+        </div>
+      )}
+      {showWelcomeBanner && (
+        <div className="mb-4 rounded-2xl border border-brand/30 bg-gradient-to-r from-brand/15 via-cyan-400/10 to-emerald-400/10 p-4 md:p-5 animate-slide-down">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-brand font-semibold">Workspace Ready</p>
+              <h3 className="text-lg md:text-xl font-bold mt-1">Welcome to your gym command center.</h3>
+              <p className="text-sm text-muted mt-1">
+                Your onboarding is complete. Start by adding members, setting plans, and inviting your team from settings.
+              </p>
+              <div className="mt-3 flex gap-2">
+                <Link href="/dashboard/members" className="text-xs md:text-sm bg-brand hover:bg-brand-hover text-white px-3 py-2 rounded-lg font-medium transition-all">
+                  Add Members
+                </Link>
+                <Link href="/dashboard/settings" className="text-xs md:text-sm border border-white/[0.12] hover:bg-white/[0.04] px-3 py-2 rounded-lg font-medium transition-all">
+                  Open Settings
+                </Link>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowWelcomeBanner(false)}
+              className="text-muted hover:text-white transition-colors"
+              aria-label="Dismiss welcome banner"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
       )}
       {error && <div className="mb-4 bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-xl text-sm">{error}</div>}

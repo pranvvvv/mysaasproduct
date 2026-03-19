@@ -42,6 +42,25 @@ npm run typecheck
 npm run build
 ```
 
+## Google Login / Signup Setup
+
+To enable Google authentication and store user data in Supabase:
+
+1. In Supabase Dashboard, go to `Authentication -> Providers -> Google` and enable Google.
+2. In Google Cloud Console, create OAuth credentials and add this redirect URI:
+	- `https://<your-project-ref>.supabase.co/auth/v1/callback`
+3. In Supabase Dashboard, set your app site URL and redirect URLs:
+	- Site URL: `http://localhost:3000` (local) and your production URL
+	- Redirect URL: `http://localhost:3000/auth/callback`
+4. Ensure env vars are present in `.env.local` and deployment envs:
+	- `NEXT_PUBLIC_SUPABASE_URL`
+	- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+5. Run the SQL in `lib/supabase/schema.sql` so triggers/RPCs exist:
+	- `handle_new_user` creates a profile row on first auth
+	- `complete_gym_onboarding` creates gym data for gym-owner signup
+
+After setup, Google login/signup from `app/login/page.tsx` will authenticate users and persist profile/onboarding data in Supabase.
+
 ## Notes About Schema Validation
 
 The schema validator (`scripts/validate-schema.js`) performs fast CI-safe checks:

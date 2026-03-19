@@ -24,6 +24,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [collapsed, setCollapsed] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
 
   const notifications: { id: number; text: string; time: string; read: boolean }[] = [];
 
@@ -33,6 +34,49 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.prefetch(item.href);
     }
   }, [router]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const verifyDashboardAccess = async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        router.replace(`/login?redirect=${encodeURIComponent(pathname || '/dashboard')}`);
+        return;
+      }
+
+      const { data: gymId, error } = await supabase.rpc('get_user_gym_id');
+      if (error || !gymId) {
+        router.replace('/onboarding');
+        return;
+      }
+
+      if (!cancelled) {
+        setCheckingAccess(false);
+      }
+    };
+
+    void verifyDashboardAccess();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, router]);
+
+  if (checkingAccess) {
+    return (
+      <div className="min-h-screen bg-dark flex items-center justify-center">
+        <div className="bg-surface border border-white/[0.08] rounded-2xl px-6 py-5 flex items-center gap-3">
+          <span className="inline-block w-5 h-5 border-2 border-white/20 border-t-brand rounded-full animate-spin" />
+          <p className="text-sm text-muted">Preparing your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-dark overflow-hidden">

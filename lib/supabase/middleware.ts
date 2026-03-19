@@ -1,20 +1,21 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSupabaseConfig } from './config';
 
 // Middleware Supabase client — refreshes auth tokens on every request.
 // This ensures sessions stay alive and prevents stale tokens.
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request: { headers: request.headers } });
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const { url: supabaseUrl, anonKey: supabaseAnonKey } = getServerSupabaseConfig();
   const isDashboardPath = request.nextUrl.pathname.startsWith('/dashboard');
+  const isOnboardingPath = request.nextUrl.pathname === '/onboarding';
+  const isProtectedAuthPath = isDashboardPath || isOnboardingPath;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    if (isDashboardPath) {
+    if (isProtectedAuthPath) {
       const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
-      loginUrl.searchParams.set('error', 'Authentication is temporarily unavailable.');
+      loginUrl.searchParams.set('redirect', `${request.nextUrl.pathname}${request.nextUrl.search}`);
       return NextResponse.redirect(loginUrl);
     }
 
@@ -45,19 +46,36 @@ export async function updateSession(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // Protect dashboard routes — redirect to login if not authenticated.
-    if (!user && isDashboardPath) {
+    // Protect authenticated routes — redirect to login if not authenticated.
+    if (!user && isProtectedAuthPath) {
       const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
+      loginUrl.searchParams.set('redirect', `${request.nextUrl.pathname}${request.nextUrl.search}`);
       return NextResponse.redirect(loginUrl);
+    }
+
+    if (user && isProtectedAuthPath) {
+      const { data: gymId, error: gymIdError } = await supabase.rpc('get_user_gym_id');
+      const hasGym = !gymIdError && Boolean(gymId);
+
+      // Users without a linked gym must finish onboarding before entering dashboard.
+      if (isDashboardPath && !hasGym) {
+        const onboardingUrl = new URL('/onboarding', request.url);
+        return NextResponse.redirect(onboardingUrl);
+      }
+
+      // Linked users should not stay on onboarding.
+      if (isOnboardingPath && hasGym) {
+        const dashboardUrl = new URL('/dashboard', request.url);
+        return NextResponse.redirect(dashboardUrl);
+      }
     }
 
     return response;
   } catch {
     // Never crash middleware in production; fail closed for protected routes.
-    if (isDashboardPath) {
+    if (isProtectedAuthPath) {
       const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
+      loginUrl.searchParams.set('redirect', `${request.nextUrl.pathname}${request.nextUrl.search}`);
       loginUrl.searchParams.set('error', 'Session refresh failed. Please sign in again.');
       return NextResponse.redirect(loginUrl);
     }
