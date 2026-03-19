@@ -34,3 +34,14 @@ export function getServerSupabaseConfig() {
     anonKey: publicConfig.anonKey ?? normalizeEnvValue(process.env.SUPABASE_ANON_KEY),
   };
 }
+
+export function getServiceRoleSupabaseConfig() {
+  const serverConfig = getServerSupabaseConfig();
+
+  return {
+    url: serverConfig.url,
+    serviceRoleKey:
+      normalizeEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY) ??
+      normalizeEnvValue(process.env.SUPABASE_SERVICE_ROLE),
+  };
+}

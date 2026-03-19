@@ -119,7 +119,7 @@ export default function LandingPage() {
               <Link href="/dashboard" className="bg-brand hover:bg-brand-hover text-white font-semibold px-8 py-3.5 rounded-full text-base transition-all hover:scale-[1.02] active:scale-[0.98]">
                 Start Free Trial
               </Link>
-              <Link href="/dashboard" className="border border-white/10 hover:border-white/20 text-white font-medium px-8 py-3.5 rounded-full text-base transition-all hover:bg-white/[0.03]">
+              <Link href="/demo/dashboard" className="border border-white/10 hover:border-white/20 text-white font-medium px-8 py-3.5 rounded-full text-base transition-all hover:bg-white/[0.03]">
                 See Dashboard →
               </Link>
             </div>

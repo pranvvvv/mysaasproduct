@@ -11,6 +11,21 @@ function getGymPlan(branchCountRaw: string) {
   return Number.isFinite(branchCount) && branchCount > 1 ? 'enterprise' : 'starter';
 }
 
+function getErrorMessage(err: unknown) {
+  if (err instanceof Error && err.message) {
+    return err.message;
+  }
+
+  if (typeof err === 'object' && err !== null) {
+    const maybeMessage = (err as { message?: unknown }).message;
+    if (typeof maybeMessage === 'string' && maybeMessage.trim()) {
+      return maybeMessage;
+    }
+  }
+
+  return 'Could not complete onboarding.';
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -108,42 +123,26 @@ export default function OnboardingPage() {
         return;
       }
 
-      const gymPlan = getGymPlan(branchCount);
-
-      const { error: metadataError } = await supabase.auth.updateUser({
-        data: {
-          account_type: 'gym',
-          auth_intent: 'signup',
-          full_name: fullName.trim(),
-          gym_name: gymName.trim(),
-          branch_count: parsedBranchCount,
-          gym_plan: gymPlan,
-          role: 'owner',
+      const response = await fetch('/api/onboarding/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          fullName: fullName.trim(),
+          gymName: gymName.trim(),
+          branchCount: parsedBranchCount,
+        }),
       });
-      if (metadataError) throw metadataError;
 
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          full_name: fullName.trim(),
-          email: user.email ?? '',
-          role: 'owner',
-        })
-        .eq('id', user.id);
-      if (profileError) throw profileError;
-
-      const { error: onboardingError } = await supabase.rpc('complete_gym_onboarding', {
-        gym_name_input: gymName.trim(),
-        gym_plan_input: gymPlan,
-        full_name_input: fullName.trim(),
-        branch_count_input: parsedBranchCount,
-      });
-      if (onboardingError) throw onboardingError;
+      const result = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(result.error || 'Could not complete onboarding.');
+      }
 
       router.replace('/dashboard?welcome=1');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not complete onboarding.');
+      setError(getErrorMessage(err));
       setSaving(false);
     }
   };

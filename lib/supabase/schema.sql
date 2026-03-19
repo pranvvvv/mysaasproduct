@@ -318,6 +318,17 @@ AS $$
   SELECT gym_id FROM public.profiles WHERE id = auth.uid();
 $$;
 
+-- Helper function: Get current user's role without triggering recursive policy checks
+CREATE OR REPLACE FUNCTION public.get_user_role()
+RETURNS TEXT
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT role FROM public.profiles WHERE id = auth.uid();
+$$;
+
 -- ---- GYMS ----
 DROP POLICY IF EXISTS "Users can view own gym" ON public.gyms;
 CREATE POLICY "Users can view own gym"
@@ -342,14 +353,33 @@ CREATE POLICY "Users can update own profile"
   USING (id = auth.uid());
 
 DROP POLICY IF EXISTS "Owners/managers can manage staff" ON public.profiles;
-CREATE POLICY "Owners/managers can manage staff"
-  ON public.profiles FOR ALL
+DROP POLICY IF EXISTS "Owners/managers can insert staff" ON public.profiles;
+DROP POLICY IF EXISTS "Owners/managers can update staff" ON public.profiles;
+DROP POLICY IF EXISTS "Owners/managers can delete staff" ON public.profiles;
+
+CREATE POLICY "Owners/managers can insert staff"
+  ON public.profiles FOR INSERT
+  WITH CHECK (
+    gym_id = public.get_user_gym_id()
+    AND public.get_user_role() IN ('owner', 'manager')
+  );
+
+CREATE POLICY "Owners/managers can update staff"
+  ON public.profiles FOR UPDATE
   USING (
     gym_id = public.get_user_gym_id()
-    AND EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('owner', 'manager')
-    )
+    AND public.get_user_role() IN ('owner', 'manager')
+  )
+  WITH CHECK (
+    gym_id = public.get_user_gym_id()
+    AND public.get_user_role() IN ('owner', 'manager')
+  );
+
+CREATE POLICY "Owners/managers can delete staff"
+  ON public.profiles FOR DELETE
+  USING (
+    gym_id = public.get_user_gym_id()
+    AND public.get_user_role() IN ('owner', 'manager')
   );
 
 -- ---- MEMBERS ----
